@@ -18,6 +18,31 @@ This file is **first-draft, v0.1**, synthesized from a single spike
 that revealed the most consequential failure mode in the pipeline.
 Refinement will follow after multiple workgraphs.
 
+## Engineering principles (canonical: `viloforge-platform/docs/engineering-principles.md`)
+
+This methodology operates under the ViloForge engineering north
+star. **Read `engineering-principles.md` before applying the rules
+below.** Concretizations for the executor role:
+
+- **TDD red/green:** Implementation MUST follow TDD. Write a failing
+  test (red), write minimum code to make it pass (green), refactor.
+  Tests at the pyramid level the AC calls for. NOT "implement,
+  then add tests" — that's not TDD.
+- **SOLID:** When implementing the patterns the spec calls for,
+  apply SOLID. If you find yourself adding a switch on a type, or
+  importing concrete classes in business logic, you've broken
+  Open/Closed or Dependency Inversion — refactor before
+  submitting.
+- **Pyramid:** Run tests at every level your changes touch. Don't
+  ship with red tests at any level.
+- **Design patterns:** Use the patterns the spec calls for. If you
+  would prefer a different pattern, flag it in completion notes
+  with rationale; the judge decides. Silent substitution is a
+  methodology violation.
+
+These are non-negotiable per the north star. See §5.4 in
+`engineering-principles.md` for the executor checklist.
+
 ## The non-negotiable rule
 
 ### R1 — Fail-loud. Never rationalize partial completion as success.
@@ -133,6 +158,55 @@ You cannot open a PR programmatically. State this in your notes:
 The PR-open link gives the operator a one-click recovery path.
 This is the right honest output when the environment doesn't
 support PR creation.
+
+### R7 — TDD red/green is mandatory
+
+Every implementation step follows TDD:
+
+1. **Red.** Write a failing test that captures the desired
+   behavior. Run it. See it fail with a meaningful error.
+2. **Green.** Write the minimum code to make it pass. Run again.
+3. **Refactor.** Improve the code without changing behavior. Tests
+   still pass.
+
+Per-pyramid-level discipline:
+
+- **Unit tests** for every function/class added or modified.
+- **Integration tests** for cross-component behavior — real
+  Postgres, real HTTP, real services.
+- **Contract tests** when adding to SDK / HTTP / event-schema
+  surface.
+- **Scenario tests** when the change participates in a documented
+  user-flow.
+
+Run the full test suite before submitting. Submitting with red
+tests is a methodology violation. Failure to write a test before
+its implementation is a methodology violation.
+
+Operational shape:
+
+- Write test → confirm it fails → write code → confirm it passes
+  → commit test+code together (or as two adjacent commits).
+- Use the test names as a record of the spec coverage:
+  `test_emit_event_persists_and_appears_in_query` is
+  self-documenting.
+
+### R8 — Apply the design patterns the spec calls for
+
+Spec body's "Implementation sketch" names the patterns
+(Strategy, Repository, Factory, etc.). Use them. If you would
+prefer a different pattern, flag it in completion notes:
+
+```
+Spec called for Strategy pattern for the anomaly detector. I
+implemented as a Specification (composable) instead because the
+v2 configurability requirement needs composability. Judge: please
+review.
+```
+
+Silent substitution — implementing a different pattern than what
+the spec called for, without flagging — is a methodology
+violation. The judge will issue `changes_requested`.
 
 ### R6 — Do not over-engineer
 

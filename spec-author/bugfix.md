@@ -24,6 +24,32 @@ restart-fix`, 2026-05-14) and from the canary-end-to-end spike
 that ran the same day. Refinement is expected after 2–3 more
 workgraphs produce corroborating retros.
 
+## Engineering principles (canonical: `viloforge-platform/docs/engineering-principles.md`)
+
+This methodology operates under the ViloForge engineering north
+star. **Read `engineering-principles.md` before applying the rules
+below.** Concretizations for the spec-author role:
+
+- **SOLID:** When authoring a spec, cite which SOLID principles are
+  load-bearing for the work. If the task introduces a strategy or
+  a repository, name the pattern in the Spec body so the executor
+  and judge agree on the shape.
+- **TDD red/green:** Every spec's `acceptance_criteria` includes
+  tests at every applicable pyramid level (unit / integration /
+  contract / scenario). A spec without test ACs is a methodology
+  violation that the verifier (V13) MUST reject.
+- **Design patterns:** Cite the patterns the implementation will
+  use in the Spec body, with rationale. Avoid pattern theater —
+  the patterns must earn their inclusion.
+- **Extensibility:** For any task that produces extensible code
+  (e.g., a new detector class, a new event type), include an AC
+  that demonstrates the extension point works (e.g., "Adding a
+  new $THING follows the documented pattern; existing tests pass
+  unchanged").
+
+These are non-negotiable per the north star. See §5.2 in
+`engineering-principles.md` for the spec-author checklist.
+
 ## Non-negotiable rules
 
 The four rules in this section are HIGH-maturity, observed across
@@ -272,6 +298,53 @@ For test/validation tasks, separately verify:
 When (1) exists but (2) doesn't, walk back honestly: "Makefile
 target today; CI wiring as a follow-up `kind: infrastructure`
 workgraph."
+
+### R11 — Test acceptance criteria at every applicable pyramid level
+
+For every task that produces code, the `acceptance_criteria`
+list MUST include explicit test ACs at each pyramid level the
+task touches:
+
+- **Unit ACs** for any function/class added or modified.
+- **Integration ACs** for any cross-component behavior added.
+- **Contract ACs** for any public-API surface added (SDK methods,
+  HTTP endpoints, event schemas).
+- **Scenario ACs** for any user-flow-touching work; or include
+  one named scenario test the work participates in.
+
+Skipping a level when work touches it is a methodology violation.
+
+Sample AC phrasing:
+
+```yaml
+acceptance_criteria:
+  - "Unit: tests/unit/test_event_factory.py covers create + validate
+     for the new event type, including error paths"
+  - "Integration: tests/integration/test_event_persist_query.py
+     verifies the event round-trips through Postgres + the read API"
+  - "Contract: tests/contract/test_event_schema.py validates the
+     event matches its schema version"
+  - "Scenario: tests/scenario/test_anomaly_flow.py exercises this
+     event as part of the stuck-detection scenario"
+```
+
+Empirical motivation: the canary spike on 2026-05-14 showed that
+without explicit test ACs, harness "success" reduces to "exited 0"
+— ghost-completion. Per-pyramid-level test ACs convert "success"
+into "evidence at every relevant level."
+
+### R12 — Cite design patterns the implementation will use
+
+Spec body's "Implementation sketch" section names the patterns
+applied (Strategy, Repository, Factory, etc.) with a one-sentence
+rationale per pattern. Helps:
+
+- The executor: implements the pattern as named, no surprises.
+- The judge: grades the impl against the claimed pattern.
+- Future readers: understand the design intent without reverse-
+  engineering.
+
+Anti-pattern: silent pattern substitution by the executor.
 
 ## Anti-patterns (do not do these)
 

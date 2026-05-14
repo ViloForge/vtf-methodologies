@@ -19,6 +19,27 @@ This file is **first-draft, v0.1**, synthesized from the same spike
 that produced the closed-system finding. Refinement follows from
 later workgraphs.
 
+## Engineering principles (canonical: `viloforge-platform/docs/engineering-principles.md`)
+
+This methodology operates under the ViloForge engineering north
+star. **Read `engineering-principles.md` before grading.**
+Concretizations for the judge role:
+
+- **TDD verification:** every test AC must point at real test code
+  that runs and passes. "Tests added" without a file path is
+  insufficient. Missing tests at a required pyramid level = the
+  AC for that level is NOT SATISFIED.
+- **SOLID grading:** review the submitted diff for god classes,
+  hardcoded concretions in business logic, switch statements where
+  Strategy would fit. These are reject-grade.
+- **Pattern grading:** if the spec called for pattern X, verify the
+  impl uses pattern X. If the executor substituted with rationale
+  in notes, evaluate the rationale; silent substitution is
+  reject-grade.
+
+These are non-negotiable per the north star. See §5.5 in
+`engineering-principles.md` for the judge checklist.
+
 ## The non-negotiable rule
 
 ### R1 — Externally-grounded ACs require external verification
@@ -125,6 +146,66 @@ maintenance debt, unreviewed surface area, and methodology drift.
 
 Issue `changes_requested` and ask the executor to revert the
 out-of-scope changes.
+
+### R7 — Grade per-pyramid-level test coverage
+
+For each test AC in the spec, verify:
+
+1. The test file/path the AC references EXISTS in the submitted
+   diff.
+2. The test code actually tests the behavior the AC describes.
+3. The test passes (or fails honestly — the executor's notes
+   should report results).
+
+Missing test at a required pyramid level = that AC is **NOT
+SATISFIED**. Don't allow "tests are nice-to-have" reasoning;
+the north star's pyramid is mandatory.
+
+Sample verdict structure:
+
+```
+AC-T<N>-1 (Unit): SATISFIED — tests/unit/test_X.py exists,
+                  covers branches, passes
+AC-T<N>-2 (Integration): NOT SATISFIED — no
+                         tests/integration/test_X.py in diff
+AC-T<N>-3 (Contract): SATISFIED — tests/contract/test_X.py
+                      validates schema
+AC-T<N>-4 (Scenario): PARTIALLY — scenario test exists but
+                      doesn't exercise the failure path
+                      required by the AC
+```
+
+Issue `changes_requested` if any required pyramid level is NOT
+SATISFIED.
+
+### R8 — Grade SOLID + pattern usage in the diff
+
+While reviewing the submitted code:
+
+- **SRP violations:** look for classes/modules that mix unrelated
+  concerns (ingestion + query + auth in one class).
+- **OCP violations:** look for switch statements on a type/kind
+  that could be a Strategy. Adding the next case requires
+  modifying the switch → OCP broken.
+- **LSP violations:** look for subtypes that throw NotImplementedError
+  or behave differently from base contracts.
+- **ISP violations:** look for fat interfaces consumers import for
+  one method.
+- **DIP violations:** look for concrete-class imports in high-level
+  modules.
+
+Grade each. If the spec called for a pattern (e.g., Strategy) and
+the impl is a switch statement, that's a silent pattern
+substitution = `changes_requested`.
+
+If the executor's notes flag a pattern substitution with rationale,
+evaluate:
+
+- Did the substitution preserve the principle the spec was
+  targeting (extensibility, testability)?
+- Is the new pattern justifiable?
+
+If yes → approve. If no → `changes_requested`.
 
 ### R6 — Don't grade against your own preference
 

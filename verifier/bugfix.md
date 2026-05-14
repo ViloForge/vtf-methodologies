@@ -18,6 +18,28 @@ plan.md + all task specs) and confirm it can safely transition
 This file is **first-draft, v0.1**, synthesized from the verifier
 retro of the first SDD workgraph and from the canary spike.
 
+## Engineering principles (canonical: `viloforge-platform/docs/engineering-principles.md`)
+
+This methodology operates under the ViloForge engineering north
+star. **Read `engineering-principles.md` before running verify.**
+Concretizations for the verifier role:
+
+- **TDD enforcement:** verify every code-bearing task spec includes
+  test ACs at every applicable pyramid level. Missing levels are
+  rejection-grade.
+- **SOLID detection:** while reading spec bodies, flag obvious SOLID
+  violations in the implementation sketches (god classes,
+  hardcoded concretions, switch statements where Strategy would
+  fit).
+- **Pattern coherence:** verify spec body claims about design
+  patterns are consistent with the implementation sketch.
+- **Extensibility affordances:** verify v1 contracts include
+  `org_id`, `cluster_id`, and other future-feature affordances
+  declared in the design.
+
+These are non-negotiable per the north star. See §5.3 in
+`engineering-principles.md` for the verifier checklist.
+
 ## Mandatory checks
 
 Each check is a single, defined inspection. Skipping any of them
@@ -143,6 +165,64 @@ If an artifact has multiple plausible owners (e.g., the
 pyproject.toml pin-bump in vafi-rolling-restart-fix's T1+T2 case),
 the AC text must be neutral about ordering OR commit to a
 specific order with rationale.
+
+### V13 — Test acceptance criteria at every applicable pyramid level
+
+For every task spec that produces code, verify
+`acceptance_criteria` includes explicit test ACs at each pyramid
+level the task touches:
+
+- **Unit ACs** present if any function/class added or modified.
+- **Integration ACs** present if cross-component behavior added.
+- **Contract ACs** present if public-API surface added (SDK
+  methods, HTTP endpoints, event schemas).
+- **Scenario ACs** present if user-flow-touching work.
+
+Sample sound AC list (from `spec-author/bugfix.md` R11):
+
+```yaml
+acceptance_criteria:
+  - "Unit: tests/unit/... covers create + validate + error paths"
+  - "Integration: tests/integration/... verifies round-trip"
+  - "Contract: tests/contract/... validates schema"
+  - "Scenario: tests/scenario/... exercises in named flow"
+```
+
+Missing levels for the scope of work = reject `specced → ready`
+with pointer to `spec-author/bugfix.md` R11.
+
+### V14 — Pattern claims coherent with implementation sketch
+
+For every spec that names a design pattern in the Spec body, verify
+the implementation sketch is consistent with the named pattern:
+
+- Spec says "Strategy pattern" → sketch shows an interface with
+  multiple implementations + a registration/dispatch site. NOT a
+  switch statement.
+- Spec says "Repository pattern" → sketch shows an interface
+  abstracting storage + a concrete impl. NOT direct ORM calls in
+  business logic.
+- Spec says "Factory pattern" → sketch shows a creation site
+  separate from usage. NOT inline `new` calls.
+
+Pattern claim + inconsistent sketch = reject; ask spec-author to
+either align the sketch OR drop the pattern claim.
+
+### V15 — Extensibility affordances present
+
+For every workgraph with declared future features (per
+`engineering-principles.md` §2.2):
+
+- Multi-tenant SaaS → `org_id` field present in event/data schemas.
+- Multi-cluster → `cluster_id` field present.
+- Configurable rules → thresholds read from a config object, not
+  literals in business logic.
+- External notification routing → notification path is consumer
+  of the existing event log, not a new write-side path.
+
+Missing affordance = reject; ask architect to either add the
+affordance to v1 or remove the future feature from the deferred
+list.
 
 ### V11 — Methodology pinning matches kind
 

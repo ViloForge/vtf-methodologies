@@ -13,6 +13,28 @@ complexity tier. It tells the architect how to architect, the
 spec-author how to author specs, the verifier what to verify, the
 executor how to execute, the judge how to judge.
 
+## Upstream: the engineering north star
+
+**Every methodology file in this repo is downstream of**
+[`viloforge-platform/docs/engineering-principles.md`](https://github.com/viloforge/viloforge-platform/blob/main/docs/engineering-principles.md).
+
+That document is the **non-negotiable north star** for design and
+development across the ViloForge platform:
+
+- Design: SOLID, extensibility, design patterns
+- Development: TDD red/green, testing pyramid (unit / integration /
+  contract / scenario)
+
+Methodology files concretize the north star for their role. They
+do not override it; they refine it. If you're reading a methodology
+file and it seems to contradict the north star, the north star
+wins — flag the methodology file for refinement.
+
+Methodology files MUST cite the north star in their "Engineering
+principles" section and explain how the role applies the
+principles. See `spec-author/bugfix.md`, `executor/bugfix.md`,
+`verifier/bugfix.md`, `judge/bugfix.md` for examples.
+
 ## Layout
 
 When populated, this repo contains:
