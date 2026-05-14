@@ -71,11 +71,37 @@ See
 [`vafi-runtime-DESIGN.md`](https://github.com/viloforge/viloforge-platform/blob/main/docs/vafi-runtime-DESIGN.md)
 for the resolution mechanics.
 
-## Current state — `v0.0`
+## Current state — `v0.0 → drafting v0.1`
 
-Empty stub. Populated during SDD adoption Phase 1 (humans run all
-roles by hand on real workgraphs; methodology drafts emerge from those
-runs and land here).
+**As of 2026-05-14, four first-draft methodology files exist:**
+
+- `spec-author/bugfix.md` — load-bearing rules for spec-authoring;
+  encodes the externally-grounded AC + `test_command` gate +
+  fail-loud language requirements (R1–R10).
+- `executor/bugfix.md` — fail-loud central rule; HTTPS→SSH switch
+  pattern; PR-creation-gap honesty pattern.
+- `judge/bugfix.md` — external-verification discipline; per-criterion
+  verdict structure; treating executor honesty as a positive signal.
+- `verifier/bugfix.md` — 11 mandatory checks (V1–V11) that gate
+  `specced → ready` transitions.
+
+These were drafted from the **first** SDD-discipline workgraph
+(`vafi-rolling-restart-fix`, 2026-05-14) plus the canary-end-to-end
+spike that ran the same day. Both rolled up multiple walk-backs
+(W1–W4) and an empirical pipeline-failure-mode discovery: **the
+verification loop is closed-system** and rubber-stamps ghost-
+completion unless the methodology forces external grounding.
+
+**Draft synthesis is rolling, not workgraph-end-only.** Every
+HIGH-maturity finding in a stage retro triggers an immediate
+patch here rather than waiting for the workgraph to complete.
+This means future spec-authors (autonomous or operator) read
+methodology that already encodes lessons from in-flight workgraphs,
+not just completed ones.
+
+Source of truth for any rule cited here: the stage-retro file in
+the workgraph dir that produced it. Cross-reference the
+`draft_synthesized_from:` frontmatter on each methodology file.
 
 See
 [implementation-roadmap-PLAN.md](https://github.com/viloforge/viloforge-platform/blob/main/docs/implementation-roadmap-PLAN.md)

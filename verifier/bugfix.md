@@ -1,0 +1,197 @@
+---
+role: verifier
+kind: bugfix
+status: draft-v0.1
+draft_synthesized_from:
+  - viloforge-projects/vafi/workgraphs/vafi-rolling-restart-fix/verifier-retro.md
+  - viloforge-projects/vafi/spikes/canary-end-to-end-2026-05-14/SPIKE-RETRO.md
+last_revision: 2026-05-14
+---
+
+# Methodology — Verifier, `kind: bugfix`
+
+You are running the verify phase between spec-authoring and
+execution. Your job: read the entire workgraph (workgraph.md +
+plan.md + all task specs) and confirm it can safely transition
+`specced → ready` for executor pickup.
+
+This file is **first-draft, v0.1**, synthesized from the verifier
+retro of the first SDD workgraph and from the canary spike.
+
+## Mandatory checks
+
+Each check is a single, defined inspection. Skipping any of them
+risks an executor-phase walk-back which is 10–100× more expensive
+than a verify-phase catch.
+
+### V1 — Zero `[NEEDS CLARIFICATION]` markers
+
+Grep every task spec and the workgraph artifacts for the strings
+`[NEEDS CLARIFICATION]` and `TBD`. Any hit (other than meta-
+references in retros) is a defect — the spec-author left an
+unfilled hole. Reject `specced → ready` until cleared.
+
+### V2 — DAG topology is acyclic and connected
+
+For every task in `tasks/`:
+
+1. Its `depends_on` IDs all resolve to other tasks in the same
+   workgraph dir.
+2. The resulting graph has no cycles.
+3. Every task is reachable from at least one root (a task with
+   empty `depends_on`).
+
+A mechanical check via topological sort suffices.
+
+### V3 — `target_repo` values resolve
+
+Every task's `target_repo` must point at a real, accessible repo.
+For multi-repo workgraphs, verify each one independently. If a
+target repo doesn't exist (or the executor lacks credentials),
+flag it now — surfaces the credentials/access issue before the
+executor wastes turns.
+
+### V4 — AC verifiability (judge-gradeable)
+
+Each `acceptance_criteria` entry must be:
+
+- An assertion an external observer (judge or test) can evaluate.
+- Specific enough that "satisfied / not satisfied" is unambiguous.
+- Not phrased as a directive to the executor ("The executor should
+  do X") — that's spec-body language, not an AC.
+
+Reject ACs like "Code is high quality" (unverifiable) or "Tests
+exist" (too broad — how many? testing what?).
+
+### V5 — **Externally-grounded AC required for external-artifact tasks**
+
+For any task whose work product is an external artifact (PR,
+deployment, published package, remote branch), **at least one
+acceptance criterion MUST be externally-grounded** per spec-author
+methodology R1.
+
+If a task's `target_repo` is something other than the project repo
+itself, that's a strong signal it produces an external artifact;
+its ACs MUST include one of:
+
+- "A PR exists at `https://...`"
+- "Branch `<name>` is present on remote `origin`"
+- "Image `<registry>/<image>:<tag>` is pullable"
+- "Endpoint `<url>` returns 200..."
+- Equivalent externally-grounded assertion.
+
+If absent, **reject** with a pointer to spec-author/R1.
+
+Empirical evidence: spike-1 was missing this; ended in
+ghost-completion to `done`. Spike-2 had it; ended correctly in
+`changes_requested`.
+
+### V6 — **`test_command` populated for external-artifact tasks**
+
+For the same tasks identified in V5, the task's `test_command`
+field MUST be populated with a shell command that mechanically
+verifies the external artifact (per spec-author/R2).
+
+Empty `test_command` (`{}` or absent) on an external-artifact task
+is a verifier-blocking defect.
+
+Empirical evidence: spike-1 had no gate; harness `exit 0` was
+trusted blindly. Spike-2's gate forced the harness to actually
+push the branch.
+
+### V7 — Fail-loud directive present in Spec body
+
+For external-artifact tasks, the Spec body MUST include language
+that explicitly requires honest failure reporting (per
+spec-author/R3). Look for phrases like "report failure honestly,"
+"do not rationalize," or equivalent.
+
+Without it, executors have been observed to rationalize partial
+completion as success.
+
+### V8 — file:line citations resolve
+
+Spot-check 4–6 file:line citations across the workgraph. For each:
+
+1. The file exists at the named path in the named repo.
+2. The lines cited contain code with the shape the spec implies
+   (a function definition, a class, a known comment, etc.).
+
+A miss is a drift finding (per architect-retro X3). 4–6 spot
+checks is enough to surface systematic drift; if multiple miss,
+the workgraph is stale and needs re-spec-authoring.
+
+### V9 — Mock-double idioms match the existing test scaffold
+
+For each task that adds a protocol/interface method or modifies an
+existing test double: read the existing test file in the target
+repo and confirm the spec's mock-extension instructions match the
+existing convention (AsyncMock vs custom class, init pattern,
+assertion style).
+
+Empirical evidence: spike-author missed this on the original T1
+and T2 specs for vafi-rolling-restart-fix; verifier caught it
+inline; specs were rewritten to use AsyncMock idioms.
+
+### V10 — Cross-task AC consistency
+
+For every cross-task reference (an AC that names another task by
+ID or role — "T1's PR", "the integration test"), verify both
+sides agree. Conflicting prescriptions are rejection-grade.
+
+If an artifact has multiple plausible owners (e.g., the
+pyproject.toml pin-bump in vafi-rolling-restart-fix's T1+T2 case),
+the AC text must be neutral about ordering OR commit to a
+specific order with rationale.
+
+### V11 — Methodology pinning matches kind
+
+When `vtf-methodologies/` files exist and `project.yaml` pins
+them: confirm the pinned methodology's `kind` field matches the
+workgraph's `kind`. Mismatches produce architect/executor
+disagreements about how the task should be executed.
+
+(During the bootstrap period — pre-methodology-pinning — this
+check is informational only.)
+
+## Verifier output
+
+Two outcomes:
+
+1. **All checks pass → workgraph status transitions `specced → ready`.**
+   The runtime makes all tasks claimable. Write a brief
+   `verifier-retro.md` only if anything surfaced that's
+   methodology-relevant.
+
+2. **Any check fails → write findings, patch what's safe inline,
+   escalate the rest to spec-author or architect.**
+   - Small defects (mock idiom, citation drift) can be patched
+     inline at verify time and noted.
+   - Larger defects (missing AC class, DAG topology changes) go
+     back to spec-author.
+   - Truly structural defects (missing fundamental capability,
+     mis-specced topology) go back to architect.
+
+## Open methodology questions
+
+- **VQ1.** How aggressive should V8 spot-checking be? Current
+  spec is 4–6 citations. Future workgraphs may indicate this
+  number should scale with workgraph size.
+- **VQ2.** V5/V6/V7 currently apply only to external-artifact
+  tasks. The "external artifact" determination is currently
+  judgmental ("is this `target_repo` outside the project repo?").
+  A more structural signal (e.g., a `produces_external_artifact:
+  true` frontmatter field) would make the check mechanical.
+- **VQ3.** What constitutes a "real defect" vs "drift to flag but
+  not block"? Bias has been "any check failure blocks `ready`";
+  future workgraphs may show that some classes of finding can be
+  flagged without blocking.
+
+## References
+
+- `viloforge-projects/vafi/workgraphs/vafi-rolling-restart-fix/verifier-retro.md`
+  — patterns V1–V3 (the originals before this draft synthesized them)
+- `viloforge-projects/vafi/spikes/canary-end-to-end-2026-05-14/SPIKE-RETRO.md`
+  — empirical basis for V5/V6/V7
+- `vtf-methodologies/spec-author/bugfix.md` — companion file; the
+  rules this verifier enforces are authored there
