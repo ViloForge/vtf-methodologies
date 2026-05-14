@@ -208,6 +208,25 @@ the implementation sketch is consistent with the named pattern:
 Pattern claim + inconsistent sketch = reject; ask spec-author to
 either align the sketch OR drop the pattern claim.
 
+**Pattern-theater detection (refinement from vfobs-foundation F4).**
+A pattern claim with no clear "interface to conform to" is theater
+— a decorative reference to a GoF name without the structural
+constraint that makes it useful. Examples to reject or rewrite:
+
+- "Adapter pattern: Alembic adapts our schema-definition to
+  Postgres" — Alembic is a tool, not an inter-interface adapter.
+- "Singleton pattern: the database engine is a module-level
+  variable" — module-level binding is not the Singleton pattern
+  unless instantiation control is in play.
+- "Observer pattern: callers can listen for events" — not unless
+  there's a Subject + Observer interface with a registration site.
+
+Pattern theater confuses executors (who try to implement the
+pattern faithfully and end up over-engineering) and judges (who
+grade against a pattern that isn't really there). When in doubt,
+drop the pattern claim — "no application-layer patterns; this task
+is X" is a valid answer.
+
 ### V15 — Extensibility affordances present
 
 For every workgraph with declared future features (per

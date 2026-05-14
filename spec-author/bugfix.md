@@ -333,6 +333,62 @@ without explicit test ACs, harness "success" reduces to "exited 0"
 — ghost-completion. Per-pyramid-level test ACs convert "success"
 into "evidence at every relevant level."
 
+### R13 — Pydantic mutation discipline (typed-model integrity)
+
+When a spec body's implementation sketch mutates a typed Pydantic
+model via `model_copy(update={...})` or any equivalent: **only use
+keys that are declared fields on the target class**. Pydantic v2's
+default `extra='ignore'` causes `model_dump()` to silently drop
+undeclared keys, producing a ghost-write defect.
+
+Empirical motivation: vfobs-foundation T4 originally had an
+"Enricher" CoR node that stuffed `server_received_at` into
+`event.data.model_copy(update={...})`. The data sub-model didn't
+declare the field; verifier pass F1 caught it before implementation.
+
+Discipline:
+- If the field belongs on the model, **declare it** (Event base class
+  or the specific Data sub-model) and add a corresponding storage
+  column if it's persisted.
+- If the field belongs outside the typed model (server-side audit,
+  request-context state), put it **somewhere typed** — a column, a
+  separate context object, a header — never a Pydantic-model
+  undeclared key.
+- Verify in the spec body with a sketch line: "model_dump() output
+  includes the field."
+
+Spec-author check before submission: any `model_copy(update={...})`
+in the sketch — confirm every key in the update dict is a declared
+field on the target class.
+
+### R14 — External-dependency stability for test scenarios
+
+When a spec names an external Helm chart, container image, or
+package by version: **probe the named artifact is still pullable**
+at spec-author time AND prefer official-image manifests over
+chart-bundled side services for test scenarios.
+
+Empirical motivation: vfobs-foundation T6 originally pinned
+bitnami/postgresql Helm chart 15.5.20. Bitnami removed all
+`bitnami/<image>:<tag>` images from Docker Hub mid-2025; chart
+15.5.20 still references `docker.io/bitnami/postgresql:16.3.0-debian-12-r23`
+which now 404s. Caught at executor stage; cost a pivot to a
+minimal in-cluster `postgres:15-alpine` manifest.
+
+Discipline for any named external artifact:
+- Run a probe (`docker pull <image>`, `helm template <chart>`,
+  `pip index versions <pkg>`) before locking the version.
+- For scenario tests that need a stock side service (Postgres,
+  Redis, etc.), prefer a minimal Kubernetes manifest using the
+  official image over a third-party chart. Reduces moving-target
+  risk dramatically.
+- If a chart MUST be used (custom operator, complex topology),
+  vendor the chart (copy it into the project repo) so a future
+  upstream image-deprecation doesn't break the build.
+
+This rule is HIGH-maturity within one workgraph — sufficient to draft,
+but warrants validation in WG2-3 before locking.
+
 ### R12 — Cite design patterns the implementation will use
 
 Spec body's "Implementation sketch" section names the patterns
