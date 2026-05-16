@@ -253,6 +253,36 @@ disagreements about how the task should be executed.
 (During the bootstrap period — pre-methodology-pinning — this
 check is informational only.)
 
+### V16 — Required-config field vs direct-construct test fixtures
+
+(Synthesized from vfobs-WG2 D-T0-1.) When a task adds a **required**
+field (no default) to a settings/config model: grep the target
+repo for direct constructions of that model in tests
+(`Settings(...)`, `Config(...)`, fixtures) and for app-boot paths
+that run in tests (e.g. `with TestClient(app)` triggering a
+lifespan that builds the model). If existing tests construct it
+directly without the new field, the required-field spec **will**
+regress them at construction/boot. Reject the bare "no default"
+AC; require either a default + a production-resolution guard
+(fail-fast where it actually matters, not at unrelated test
+construction) or an explicit, in-scope fixture update. Catching
+this at verify saves an implementation-phase walk-back.
+
+### V17 — Inline patch vs locked-contract artifact
+
+(Synthesized from vfobs-WG2 F1→R2; extends the V14 F1/F4 lineage.)
+Before approving an **inline patch that mutates a Pydantic/DTO
+model's fields**, grep for a pinned-schema contract over that
+model: `*.v1.json` fixtures, `model_json_schema()`/`model_dump()`
+comparison tests, OpenAPI snapshots. If the model's serialized
+shape is a locked contract, a field-add **drifts the contract**.
+The patch must then either (a) bump the contract in the *same*
+change, or (b) use a separate read/transform model and leave the
+locked model untouched. Inline verifier patches that touch a
+shared/locked artifact MUST be validated against that artifact in
+the same verify pass — never defer the breakage to the executor
+(vfobs-WG2 cost: a full mechanism reversal mid-implementation).
+
 ## Verifier output
 
 Two outcomes:

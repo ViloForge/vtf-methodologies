@@ -232,8 +232,29 @@ The judge will flag scope creep as a violation.
   vague = different executors produce different shapes. Empirical
   observation needed.
 
+## Scenario / kind-cluster execution (synthesized from vfobs-WG2 T5)
+
+- **SC-1 — never trust the ambient kubeconfig for kind scenarios.**
+  `~/.kube/config` may be a symlink to a *production* cluster
+  kubeconfig. A naive `kind export kubeconfig` writes the kind
+  context into whatever kubeconfig is active → pollutes / mutates
+  prod config (kb gotcha `bkt4wMJZ`). Scenario prepare scripts MUST
+  `kind export kubeconfig --name <c>` to a **dedicated file** and
+  export `KUBECONFIG` for both the prepare run and the pytest run.
+  Verify the prod/default kubeconfig is untouched afterward.
+- **SC-2 — uuid-namespace every asserted id against a persistent
+  shared store.** A reused kind cluster's Postgres survives across
+  runs. Namespace **all** ids the test asserts counts on — both
+  workgraph- and task-scoped (task-scoped reads are global). A
+  test that passes once but fails on re-run is the tell.
+- Fail-loud for scenario tasks is literal: do NOT mark complete
+  unless the scenario suite runs green **end-to-end on the
+  cluster** (WG1-T6 / vfobs-WG2-T5 precedent).
+
 ## References
 
+- `viloforge-projects/vfobs/workgraphs/read-api/executor-retro.md`
+  — vfobs-WG2 deviations (D-T0-1/D-T1-1/D-T2-1) + OF-1/OF-2
 - `viloforge-projects/vafi/spikes/canary-end-to-end-2026-05-14/SPIKE-RETRO.md`
   — empirical evidence for R1 (the central rule)
 - vafi controller code that consumes harness output:
