@@ -283,6 +283,37 @@ shared/locked artifact MUST be validated against that artifact in
 the same verify pass — never defer the breakage to the executor
 (vfobs-WG2 cost: a full mechanism reversal mid-implementation).
 
+### V18 — External-integration contract grounded in the real provider
+
+(Synthesized from vfobs-WG2 OIQ3; the costliest miss to date —
+kb [[feedback-external-contract-grounding]].) When a spec/adapter
+calls an EXTERNAL system (another service's endpoint, path, auth
+scheme, request/response shape), V8's in-repo citation rule
+generalises to the boundary:
+
+- The spec MUST cite the **real provider contract** — a file:line
+  in the provider's source/SDK, or a live OpenAPI path — NOT a
+  design-doc sentence, a plausible-looking path, or "how APIs
+  usually look." Resolve that citation against the real provider
+  exactly as V8 resolves in-repo citations.
+- The **test double for that provider MUST be derived from the
+  real contract** (generated from its OpenAPI/SDK, or explicitly
+  cross-checked against it). A self-authored stub that encodes the
+  same assumption it is meant to test is not a test — it is the
+  assumption validating itself, and it makes every downstream gate
+  (verifier, PRs, scenario) internally consistent and externally
+  wrong. This is the [[feedback-vtaskforge-pipeline-closed-system]]
+  rubber-stamp failure at an external boundary.
+- No provider-grounded citation, OR a stub not traceable to the
+  real contract ⇒ **reject**: the integration is unverified
+  regardless of how green it is.
+
+Empirical: vfobs-WG2 invented `/v2/auth/whoami` + Bearer; the real
+vtaskforge has neither (it has `/v2/auth/validate/` + DRF Token).
+A stub faked the invention; verifier V1–V17, 6 PRs, and the gated
+scenario all passed. It only surfaced on the real end-to-end —
+after the full WG shipped.
+
 ## Verifier output
 
 Two outcomes:
