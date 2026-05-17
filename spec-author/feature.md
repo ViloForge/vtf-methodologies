@@ -1,7 +1,7 @@
 ---
 role: spec-author
 kind: feature
-status: draft-v0.2
+status: draft-v0.3
 draft_synthesized_from:
   - kb workspace viloforge-platform journal 2026-05-16..17 (executor/judge
     campaign + R0–R3 substrate hardening + 4 live Flask deliveries)
@@ -100,10 +100,45 @@ do **not** represent it as a TDD or quality guarantee. Full enforcement
 red/green-**reconstruction** gate (MQ-F1, unbuilt). Until it exists,
 the spec must not claim TDD is verified.
 
-### F6 — One deliverable per task
-Pipeline is one-task-at-a-time. One spec = one shippable artifact.
-Multi-node DAG decomposition is unbuilt (MQ-F2) — note forward, never
-fake inside one task.
+### F6 — One deliverable per task; multi-node = a workgraph
+One spec = one shippable increment with its own gate. When the
+description needs several composing artifacts, decompose into a
+**workgraph DAG** per F8 — do not fake it inside one task, and do not
+hand-merge between tasks (the composition substrate, not the architect,
+integrates — see F8 + `agentic-pipeline-ARCHITECTURE.md` §10).
+
+### F8 — Workgraph (multi-task DAG) decomposition discipline
+For a multi-artifact deliverable the architect emits a **workgraph**:
+nodes (tasks) + `depends_on` edges. Rules (validated-by-design;
+**execution requires the Workgraph Composition substrate WC-1..3 —
+single-task is the only mode until that ships**):
+
+1. **Decompose by deliverable seam, not by activity.** Each node is a
+   coherent shippable increment with its own AC-id'd gate (F2).
+2. **File-ownership map.** Every shared/foundational file (`pyproject.
+   toml`, package `__init__`, the shared contract module) has exactly
+   **one owner node** (usually the root/skeleton node). Dependent nodes
+   **extend via declared extension points, never rewrite owned files**
+   — this is what makes the deterministic merge clean.
+3. **Parallelize iff disjoint.** Two nodes may omit a `depends_on` edge
+   (run in parallel) **only if their write-sets are disjoint or
+   provably commutative**; otherwise add the edge to serialize.
+   Compute each node's write-set from its spec and set edges
+   accordingly. Coupled concerns (e.g. server↔client share a wire
+   contract) ⇒ a linear edge; do not fake fan-out.
+4. **Freeze inter-node contracts in the dependency.** The dependency
+   node delivers + tests + documents the interface; the dependent's
+   spec references that frozen contract and builds against it (F1
+   generalized across nodes). The dependent only sees that code because
+   the substrate merges the dependency into the integration branch
+   first — never assume otherwise.
+5. **Terminal integration-acceptance node.** The last node's base is
+   the composed integration branch; its gate exercises the **whole
+   product** (build / `pip install` / CLI / e2e) — F4 at DAG scope.
+6. **Workgraph fail-loud (F7 at DAG scope).** A node's merge-conflict
+   is a bounded rework on the *current* integration branch; the
+   workgraph never silently stalls; on rework-exhaustion escalate the
+   whole DAG to the human with per-node evidence.
 
 ### F7 — Bounded rework path (a non-terminal verdict is expected, not exceptional)
 The pipeline can return `changes_requested` (judge rejected), `failed`/
@@ -177,8 +212,10 @@ with its 1-based index, `AC1`…) verifies it.
 ## Open methodology questions
 - **MQ-F1.** Red/green-reconstruction gate → upgrades F5 from
   "external gate only" to verified ordering.
-- **MQ-F2.** Multi-task workgraph (DAG / `depends_on`) — needs the
-  first real multi-artifact description.
+- **MQ-F2. RESOLVED-BY-DESIGN** (2026-05-17, first multi-artifact
+  description): decomposition discipline is F8; *execution* needs the
+  Workgraph Composition substrate (ARCHITECTURE §10, WC-1..3) — built
+  before multi-task DAGs run. Until then, single-task only.
 - **MQ-F3 (load-bearing).** The **spec-admission gate**: deterministic
   pre-claim check that ACs are machine-checkable, every AC has a
   labelled gate assertion (F2), fail-loud present, contract pinned.
