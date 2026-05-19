@@ -226,6 +226,36 @@ controller) surfaced three SOP-grade lessons:
   integration-acceptance node's spec pins the *existing* deliverable
   contract; it never invents a branch convention.
 
+### Harvested — WC-3 proving-delivery design-grounding (2026-05-19, diamond DAG)
+
+Authoring the WC-3 proving DAG (n1 skeleton → n2 server ‖ n3 client →
+n4 integration) surfaced a fourth, sharper seam lesson — caught
+**design-first, before a single pipeline run was burned**, which is
+exactly the value a proving delivery exists to extract:
+
+- **F8.d — Trace the DAG *cold-start* path (empty integration branch,
+  root node), not just the steady-state seam.** The steady-state seam
+  (a dependent cloning the already-composed integration branch) hides
+  the cold-start seam (the *first/root* node, whose integration branch
+  does not exist yet). Before firing any workgraph, verify the
+  dependency-less node's clone ref by composing **three** merged
+  producer facts: (1) the SoR `resolve_base_ref` rule, (2) the
+  controller's clone invocation + its failure mode, (3) when
+  `integrate()` actually creates the integration git ref. In WC-3 this
+  composition proved a real WC-1 defect: `resolve_base_ref`
+  (`tasks/services.py:502-512`) returns `milestone.integration_branch`
+  for the **root** node too (no `depends_on` special-case), but the
+  controller's `git clone --branch <integration_branch> --single-branch`
+  (`invoker.py:204-233`) hard-fails with no fallback because
+  `integrate()` only creates that ref *after the first approval* — an
+  unbreakable cold-start deadlock for every multi-task DAG.
+  Generalization: a "proving delivery" must walk the
+  empty-state/first-node path end-to-end across SoR → controller →
+  integrate(); a contract correct in steady state can still be
+  unsatisfiable at t=0. The dependency-less node's base **is** the
+  project default — the integration branch is its *output*, created by
+  its own `integrate()`, never its input.
+
 ## Anti-patterns
 - Prose spec, no machine-checkable contract (F1/F7-bug).
 - Gate runs the agent's tests, or assertions lack AC ids (F2).
@@ -237,6 +267,9 @@ controller) surfaced three SOP-grade lessons:
 - Specifying a consumer DAG node against a producer contract that is
   *designed* but not yet merged/verified — ground the seam against
   merged producer code, across SDK boundaries (F8.a/F8.b).
+- Firing a workgraph without tracing the cold-start/root-node path
+  (empty integration branch at t=0) — steady-state correctness does
+  not imply the first node can even clone (F8.d).
 
 ## Open methodology questions
 - **MQ-F1.** Red/green-reconstruction gate → upgrades F5 from
@@ -247,9 +280,16 @@ controller) surfaced three SOP-grade lessons:
   take_merge_slot, C4 reaper) + SDK base_ref (#11) +
   integration-result endpoint (#12) + WC-2 (vafi#20: per-task
   base_ref clone, deterministic post-approve merge, fail-loud,
-  idempotent). Multi-task DAGs are unblocked **once deployed** (deploy
-  pending — see kb). WC-3 proving delivery (server+client+poetry) is
-  the next gate before lifting "single-task only".
+  idempotent). Substrate DEPLOYED 2026-05-19 (vtf-dev f5a29c6, vafi-dev
+  98f6cce, WC-1↔WC-2 seam live-verified). **WC-3 proving delivery
+  authored + design-grounded, NOT yet fired**: design-grounding proved
+  a WC-1 cold-start defect (F8.d — root node's `resolve_base_ref`
+  returns the not-yet-created integration branch ⇒ root clone
+  deadlock; no multi-task DAG can start). Fix = WC-1.1: a
+  dependency-less node bases on `project.default_branch`,
+  `integration_branch` only when the task has ≥1 `depends_on` edge.
+  **"single-task only" remains in force until WC-1.1 lands + WC-3
+  fires green.** See kb workspace `viloforge-platform`.
 - **MQ-F3 (load-bearing).** The **spec-admission gate**: deterministic
   pre-claim check that ACs are machine-checkable, every AC has a
   labelled gate assertion (F2), fail-loud present, contract pinned.
