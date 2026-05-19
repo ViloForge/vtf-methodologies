@@ -200,6 +200,32 @@ with its 1-based index, `AC1`…) verifies it.
 - **Lesson harvested:** contract-pinned/impl-free held again on a new
   domain → F1 confidence raised (still single-shape, see envelope).
 
+### Harvested — WC substrate program (2026-05-19, multi-slice DAG, cross-repo)
+
+Delivering Workgraph Composition as WC-1 (vtaskforge SoR) → WC-2 (vafi
+controller) surfaced three SOP-grade lessons:
+
+- **F8.a — Verify the inter-slice seam against *merged producer code*,
+  at the consumer slice's design time, before writing it.** WC-1/C3
+  asserted "the controller reports the outcome" but exposed no API;
+  WC-2 design-grounding (reading the *merged* `tasks/views.py`) proved
+  `complete()` is invalid from `integrating` and `fail()` is
+  doing-scoped — a load-bearing gap caught **design-first**, not
+  mid-code. For every frozen inter-node contract (F8), the consuming
+  node's spec must cite the exact producer symbol/endpoint that
+  satisfies it; "the producer will provide it" is not grounding.
+- **F8.b — A forwarding/generated SDK is not proof a new contract
+  field reaches the consumer.** WC-1's `base_ref` was silently dropped
+  by an `extra="ignore"` SDK model; the consumer surface had to be
+  verified to round-trip explicitly. When a DAG contract crosses a
+  repo/SDK boundary, the seam test asserts the field *through the real
+  client model*, not just the API response.
+- **F8.c — Ground the composition ref from the real delivery
+  contract.** D2 merged `gates.deliverable_branch` (`vafi/task-<id>`),
+  the verified F7/F10 ref — not an assumed branch name. The
+  integration-acceptance node's spec pins the *existing* deliverable
+  contract; it never invents a branch convention.
+
 ## Anti-patterns
 - Prose spec, no machine-checkable contract (F1/F7-bug).
 - Gate runs the agent's tests, or assertions lack AC ids (F2).
@@ -208,14 +234,22 @@ with its 1-based index, `AC1`…) verifies it.
 - Unbounded re-fire, or relabelling an unmet AC to force closure (F7).
 - Closing the cycle without the harvest journal line (skill step 8).
 - Architect also acting as judge (recursive-axiom violation).
+- Specifying a consumer DAG node against a producer contract that is
+  *designed* but not yet merged/verified — ground the seam against
+  merged producer code, across SDK boundaries (F8.a/F8.b).
 
 ## Open methodology questions
 - **MQ-F1.** Red/green-reconstruction gate → upgrades F5 from
   "external gate only" to verified ordering.
-- **MQ-F2. RESOLVED-BY-DESIGN** (2026-05-17, first multi-artifact
-  description): decomposition discipline is F8; *execution* needs the
-  Workgraph Composition substrate (ARCHITECTURE §10, WC-1..3) — built
-  before multi-task DAGs run. Until then, single-task only.
+- **MQ-F2. RESOLVED-BY-DESIGN + SUBSTRATE BUILT** (decomp = F8). The
+  Workgraph Composition substrate is delivered+merged: WC-1
+  (vtaskforge#10: integration_branch, base_ref, `integrating`,
+  take_merge_slot, C4 reaper) + SDK base_ref (#11) +
+  integration-result endpoint (#12) + WC-2 (vafi#20: per-task
+  base_ref clone, deterministic post-approve merge, fail-loud,
+  idempotent). Multi-task DAGs are unblocked **once deployed** (deploy
+  pending — see kb). WC-3 proving delivery (server+client+poetry) is
+  the next gate before lifting "single-task only".
 - **MQ-F3 (load-bearing).** The **spec-admission gate**: deterministic
   pre-claim check that ACs are machine-checkable, every AC has a
   labelled gate assertion (F2), fail-loud present, contract pinned.
