@@ -274,6 +274,24 @@ exactly the value a proving delivery exists to extract:
   the never-exercised multi-task path; only proving delivery flushes
   them, and only a per-leg trace predicts them.
 
+- **F7.a — The delivery directive must defeat the persisted-workdir
+  "already complete" rationalization on rework.** WC-3 n2 (server)
+  ghosted twice: run-1 never pushed; the F7 re-fire reused the
+  *persisted workdir* (`invoker._ensure_repo_cloned`: existing `.git`
+  ⇒ no-op, by rework design), the agent saw its own prior uncommitted
+  files, declared "the implementation already existed", made **no new
+  commit**, and the deliverable branch came back *identical to base*
+  (the F7/F10 delivery gate caught it — the machinery worked). The
+  identically-shaped sibling n3 passed first try, so the spec body was
+  sound — the gap was the *delivery* directive under rework. Lesson:
+  every spec's delivery section must (1) state that a reused workdir's
+  pre-existing files are **not** proof of delivery, (2) mandate a
+  fresh commit + push **every run** with the deliverable branch
+  strictly ahead of base, and (3) forbid reporting success on
+  apparent-prior-state. Pair it with R3 fail-loud. Bound re-fires (≤3)
+  and *diagnose each failure distinctly* — n2's two failures had two
+  different root causes; blind re-fire would have masked the second.
+
 ## Anti-patterns
 - Prose spec, no machine-checkable contract (F1/F7-bug).
 - Gate runs the agent's tests, or assertions lack AC ids (F2).
