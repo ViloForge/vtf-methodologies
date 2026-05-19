@@ -256,6 +256,24 @@ exactly the value a proving delivery exists to extract:
   project default — the integration branch is its *output*, created by
   its own `integrate()`, never its input.
 
+- **F8.d.1 — Sharpening (post-fire, WC-3 n1): the cold-start trace
+  must enumerate the *credential* of every git op on the multi-task
+  path, not just *which ref*.** WC-3 fired after WC-1.1; n1 then
+  passed gates+judge, reached `integrating`, and `integrate()` failed:
+  `could not read Username for 'https://github.com'`. The multi-task
+  path **re-implements** git operations the single-task path already
+  solved: the executor clone uses the #15/#17 SSH credential, but
+  `integrate()`'s independent clone+push never inherited it (WC-1.2,
+  vafi#23 → fixed #22). Lesson: a substrate's DAG path has *parallel,
+  separately-authored* git legs (executor-clone vs integrate-clone vs
+  integrate-push vs branch-create); "the executor path works" does not
+  imply the integrate path works. Design-grounding must walk **each
+  git leg** of the cold-start path and confirm it carries the same
+  auth + cold-start handling — enumerate the legs, do not assume
+  shared plumbing. Two real substrate defects (WC-1.1, WC-1.2) hid on
+  the never-exercised multi-task path; only proving delivery flushes
+  them, and only a per-leg trace predicts them.
+
 ## Anti-patterns
 - Prose spec, no machine-checkable contract (F1/F7-bug).
 - Gate runs the agent's tests, or assertions lack AC ids (F2).
