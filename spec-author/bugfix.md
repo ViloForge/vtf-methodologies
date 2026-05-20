@@ -164,7 +164,8 @@ title: <one-line description>
 workgraph: <slug>
 order: <int>
 required_tags:
-  - executor          # or [executor, pi] etc.
+  - claude            # R4: pin one harness — [claude] or [pi].
+                      # Never bare [executor] (matches no pool post-R4).
 depends_on:
   - <other task ID>   # if any
 target_repo: <owner>/<repo>

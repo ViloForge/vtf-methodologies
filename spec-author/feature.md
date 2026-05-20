@@ -355,11 +355,15 @@ exactly the value a proving delivery exists to extract:
   pre-claim check that ACs are machine-checkable, every AC has a
   labelled gate assertion (F2), fail-loud present, contract pinned.
   Until built, the architect is self-adjudicated (the KNOWN AXIOM GAP).
-- **MQ-F4.** Harness nondeterminism (F5/routing) pollutes the evidence
-  this methodology is synthesized from — R4 (routing determinism)
-  should arguably precede heavy harvesting; until then tag every
-  evidence citation with its harness and treat single-harness as
-  provisional.
+- **MQ-F4. RESOLVED by R4 (2026-05-20).** Harness routing is now
+  deterministic by construction: the Claude and Pi pools carry disjoint
+  tags (`claude` / `pi`) with no shared `executor` tag, so a task pins
+  exactly one harness via `required_tags=[claude]` or `[pi]` — the
+  claimer is no longer ambiguous, and bare `[executor]` matches no pool.
+  Always pin the harness and record which one a delivery ran on; the
+  evidence-confound that argued R4-before-heavy-harvesting is closed.
+  (Single-harness coverage is still weaker than both — that's a coverage
+  judgement, not a routing ambiguity.)
 
 ## References
 kb workspace `viloforge-platform` journal 2026-05-16..17;
