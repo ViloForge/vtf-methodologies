@@ -109,9 +109,14 @@ integrates — see F8 + `agentic-pipeline-ARCHITECTURE.md` §10).
 
 ### F8 — Workgraph (multi-task DAG) decomposition discipline
 For a multi-artifact deliverable the architect emits a **workgraph**:
-nodes (tasks) + `depends_on` edges. Rules (validated-by-design;
-**execution requires the Workgraph Composition substrate WC-1..3 —
-single-task is the only mode until that ships**):
+nodes (tasks) + `depends_on` edges. Rules (validated-by-design **and
+PROVEN-IN-DELIVERY**: the Workgraph Composition substrate WC-1..3 has
+shipped and a real multi-task diamond DAG executed end-to-end —
+`depends_on` gating, parallel fan-out, cold-start clone, integrate
+SSH push + branch-create, serialized merge slot, and F7/F10 ghost-
+catch all exercised. Repo `vilosource/wc3-kvstore`, 2026-05-20 2-source
+verify green. Multi-task DAGs are the supported mode — single-task is
+no longer a restriction):
 
 1. **Decompose by deliverable seam, not by activity.** Each node is a
    coherent shippable increment with its own AC-id'd gate (F2).
@@ -292,6 +297,21 @@ exactly the value a proving delivery exists to extract:
   and *diagnose each failure distinctly* — n2's two failures had two
   different root causes; blind re-fire would have masked the second.
 
+- **F8.e — A proving delivery's value is realized in BOTH phases;
+  budget for substrate defects on the never-exercised multi-task
+  path.** WC-3 confirmed the two phases catch *different* seam
+  classes: design-grounding (pre-fire) caught the cold-start root-node
+  base_ref seam (F8.d); execution (post-fire) caught the per-leg
+  credential seam the trace under-specified (F8.d.1) and the rework
+  delivery-ghost (F7.a). All three were *real* substrate defects
+  (WC-1.1 root clone, WC-1.2 integrate SSH push, F7.a rework
+  directive), each invisible on the single-task path that had been the
+  only mode exercised. Lesson: a never-run multi-task path will carry
+  ~3 latent substrate defects no trace fully predicts; only firing a
+  real DAG flushes them — schedule a proving delivery as a first-class
+  substrate-acceptance step, not a demo. WC-3 found exactly that and
+  closed green after the three fixes shipped.
+
 ## Anti-patterns
 - Prose spec, no machine-checkable contract (F1/F7-bug).
 - Gate runs the agent's tests, or assertions lack AC ids (F2).
@@ -310,22 +330,27 @@ exactly the value a proving delivery exists to extract:
 ## Open methodology questions
 - **MQ-F1.** Red/green-reconstruction gate → upgrades F5 from
   "external gate only" to verified ordering.
-- **MQ-F2. RESOLVED-BY-DESIGN + SUBSTRATE BUILT** (decomp = F8). The
+- **MQ-F2. RESOLVED + PROVEN-IN-DELIVERY** (decomp = F8). The
   Workgraph Composition substrate is delivered+merged: WC-1
   (vtaskforge#10: integration_branch, base_ref, `integrating`,
   take_merge_slot, C4 reaper) + SDK base_ref (#11) +
   integration-result endpoint (#12) + WC-2 (vafi#20: per-task
   base_ref clone, deterministic post-approve merge, fail-loud,
-  idempotent). Substrate DEPLOYED 2026-05-19 (vtf-dev f5a29c6, vafi-dev
-  98f6cce, WC-1↔WC-2 seam live-verified). **WC-3 proving delivery
-  authored + design-grounded, NOT yet fired**: design-grounding proved
-  a WC-1 cold-start defect (F8.d — root node's `resolve_base_ref`
-  returns the not-yet-created integration branch ⇒ root clone
-  deadlock; no multi-task DAG can start). Fix = WC-1.1: a
-  dependency-less node bases on `project.default_branch`,
-  `integration_branch` only when the task has ≥1 `depends_on` edge.
-  **"single-task only" remains in force until WC-1.1 lands + WC-3
-  fires green.** See kb workspace `viloforge-platform`.
+  idempotent) + the multi-task defects flushed by proving: WC-1.1
+  (vafi#21, root cold-start clone), WC-1.2 (vafi#22, integrate SSH
+  push), F7.a (rework delivery directive). Substrate DEPLOYED
+  2026-05-19 (vtf-dev f5a29c6, vafi-dev 5ec61d5). **WC-3 proving
+  delivery FIRED AND GREEN**: a 4-node diamond DAG (n1 skeleton → n2
+  server ‖ n3 client → n4 integration) executed end-to-end against the
+  live substrate, repo `vilosource/wc3-kvstore`, integration branch
+  `vafi/wg-LU5GNOz7O7hkR038C-LJm`. 2-source verified independently
+  2026-05-20: (1) all four externally-authored node gates re-run by
+  the architect in clean venvs on the *composed* tree → GATE_OK; (2)
+  the delivered in-repo pytest suite → 7 passed; the wheel builds,
+  installs fresh, and `create_app`/`KVClient` round-trip + raw
+  contract 400/404 checks hold. **The "single-task only" restriction
+  is lifted — multi-task DAGs are proven and supported (F8).** See kb
+  workspace `viloforge-platform`.
 - **MQ-F3 (load-bearing).** The **spec-admission gate**: deterministic
   pre-claim check that ACs are machine-checkable, every AC has a
   labelled gate assertion (F2), fail-loud present, contract pinned.
