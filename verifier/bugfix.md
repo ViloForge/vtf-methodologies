@@ -314,6 +314,36 @@ A stub faked the invention; verifier V1–V17, 6 PRs, and the gated
 scenario all passed. It only surfaced on the real end-to-end —
 after the full WG shipped.
 
+### V19 — Producer/consumer cadence coherence
+
+(Synthesized from R5 F3/F4 — the observability stream defects.) When
+a fix introduces or relies on a **periodic producer signal** (heartbeat,
+poll, keepalive, emit-on-tick) and a **consumer that alarms on the
+absence/staleness of that signal** (a watcher, anomaly rule, timeout,
+reaper), the spec MUST establish two relationships *between the two
+sides*, not in isolation:
+
+- **Alarm window > signal period.** The consumer's "missing/stale"
+  threshold MUST be strictly greater than the producer's emit period
+  (with margin for ≥1 missed beat). A threshold below the period is a
+  false-positive *by construction* — no runtime evidence will look
+  healthy. Prefer **deriving** the threshold from the producer cadence
+  (a `from_cadence(interval)` constructor) over a free literal, so the
+  relationship cannot silently regress when the interval changes.
+  (F3: watcher `crash_s=120` < controller `heartbeat_interval=300` ⇒
+  every healthy >120s task flagged CRASHED.)
+- **First signal not delayed past the window.** A producer loop that
+  sleeps *before* its first emit delays the first signal by a full
+  period; any unit of work shorter than that period emits **nothing**,
+  so the consumer's state never arms. Emit on entry, sleep at the tail.
+  (F4: `heartbeat_loop` slept first ⇒ <300s tasks emitted zero events ⇒
+  stuck-detection structurally inert for the common task class.)
+
+A spec that changes one side's cadence without re-checking the other,
+or that hardcodes a consumer threshold divorced from the producer
+period, ⇒ **reject**. Both relationships are checkable statically from
+the two cadence constants — no run required.
+
 ## Verifier output
 
 Two outcomes:
